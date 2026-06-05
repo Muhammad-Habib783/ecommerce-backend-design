@@ -1,6 +1,6 @@
 import React from 'react';
 
-const CategorySection = ({ title, bannerImg, items, bannerBg }) => {
+const CategorySection = ({ title, bannerImg, items, bannerBg, setPage }) => {
   return (
     <section className="bg-white border border-[#DEE2E7] rounded-lg mt-6 flex flex-col lg:flex-row overflow-hidden">
       {/* Banner */}
@@ -10,7 +10,10 @@ const CategorySection = ({ title, bannerImg, items, bannerBg }) => {
       >
         <div className="relative z-10">
           <h3 className="text-xl font-bold text-dark w-40 leading-tight mb-4">{title}</h3>
-          <button className="bg-white text-dark px-4 py-2 rounded-md font-medium text-sm hover:bg-shade transition-colors shadow-sm">
+          <button
+            onClick={() => setPage('listing')}
+            className="bg-white text-dark px-4 py-2 rounded-md font-medium text-sm hover:bg-shade transition-colors shadow-sm"
+          >
             Source now
           </button>
         </div>
@@ -20,6 +23,7 @@ const CategorySection = ({ title, bannerImg, items, bannerBg }) => {
         {items.map((item, index) => (
           <div
             key={index}
+            onClick={() => setPage('listing', item.name)}
             className="p-5 border-r border-b last:border-r-0 border-[#DEE2E7] flex justify-between cursor-pointer hover:bg-white hover:shadow-[0px_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 group h-[130px] relative hover:z-10"
           >
             <div className="flex flex-col">

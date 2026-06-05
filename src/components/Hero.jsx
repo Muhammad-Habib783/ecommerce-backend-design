@@ -3,10 +3,17 @@ import bannerImg from '../assets/Image/backgrounds/Banner-board-800x420 2.png';
 import promo1 from '../assets/Image/backgrounds/Group 969.png';
 import promo2 from '../assets/Image/backgrounds/Group 982.png';
 
-const Hero = () => {
-  const categories = [
-    "Automobiles", "Clothes and wear", "Home interiors", "Computer and tech", 
-    "Tools, equipments", "Sports and outdoor", "Animal and pets", "Machinery tools", "More category"
+const Hero = ({ user, setPage }) => {
+ const categories = [
+    { name: "Automobiles", filter: "" },
+    { name: "Clothes and wear", filter: "clothing" },
+    { name: "Home interiors", filter: "interior" },
+    { name: "Computer and tech", filter: "electronics" },
+    { name: "Tools, equipments", filter: "" },
+    { name: "Sports and outdoor", filter: "sports" },
+    { name: "Animal and pets", filter: "pets" },
+    { name: "Machinery tools", filter: "" },
+    { name: "More category", filter: "" },
   ];
 
   return (
@@ -16,13 +23,14 @@ const Hero = () => {
         <div className="w-64 flex-shrink-0">
           <ul className="space-y-1">
             {categories.map((cat, index) => (
-              <li 
-                key={index} 
-                className={`px-4 py-2 rounded-md cursor-pointer transition-colors ${index === 0 ? 'bg-primary-light font-medium text-dark' : 'text-dark-light hover:bg-shade'}`}
-              >
-                {cat}
-              </li>
-            ))}
+  <li
+    key={index}
+    onClick={() => setPage('listing', cat.filter)}
+    className={`px-4 py-2 rounded-md cursor-pointer transition-colors ${index === 0 ? 'bg-primary-light font-medium text-dark' : 'text-dark-light hover:bg-shade'}`}
+  >
+    {cat.name}
+  </li>
+))}
           </ul>
         </div>
 
@@ -31,31 +39,71 @@ const Hero = () => {
           className="flex-1 relative rounded-lg p-10 flex flex-col justify-center bg-cover bg-no-repeat bg-center"
           style={{ backgroundImage: `url("${bannerImg}")` }}
         >
-           <div className="relative z-10 w-1/2">
-             <h3 className="text-2xl font-normal text-dark mb-1">Latest trending</h3>
-             <h2 className="text-[32px] font-bold text-dark leading-tight mb-6">Electronic items</h2>
-             <button className="bg-white text-dark px-6 py-2 rounded-md font-medium hover:bg-shade transition-colors shadow-sm">
-               Learn more
-             </button>
-           </div>
+          <div className="relative z-10 w-1/2">
+            <h3 className="text-2xl font-normal text-dark mb-1">Latest trending</h3>
+            <h2 className="text-[32px] font-bold text-dark leading-tight mb-6">Electronic items</h2>
+           <button
+  onClick={() => setPage('trending')}
+  className="bg-white text-dark px-6 py-2 rounded-md font-medium hover:bg-shade transition-colors shadow-sm"
+>
+  Learn more
+</button>
+          </div>
         </div>
 
         {/* Right Sidebar */}
         <div className="w-60 flex flex-col gap-3">
-          {/* Welcome Box */}
-          <div className="bg-[#E3F0FF] p-4 rounded-lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-[#C3D9FF] flex items-center justify-center text-secondary">
-                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+
+          {/* Welcome Box — only show when NOT logged in */}
+          {!user && (
+            <div className="bg-[#E3F0FF] p-4 rounded-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-[#C3D9FF] flex items-center justify-center text-secondary">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-dark text-sm font-medium">Hi, user</p>
+                  <p className="text-dark text-sm">let's get started</p>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <p className="text-dark text-sm">Hi, user</p>
-                <p className="text-dark text-sm">let's get started</p>
-              </div>
+              <button
+                onClick={() => setPage('auth', 'signup')}
+                className="w-full bg-primary hover:bg-primary-dark text-white py-2 rounded-md mb-2 text-sm font-medium transition-colors"
+              >
+                Join now
+              </button>
+              <button
+                onClick={() => setPage('auth', 'login')}
+                className="w-full bg-white text-primary py-2 rounded-md text-sm font-medium border border-shade-border hover:bg-shade transition-colors"
+              >
+                Log in
+              </button>
             </div>
-            <button className="w-full bg-primary hover:bg-primary-dark text-white py-2 rounded-md mb-2 text-sm font-medium transition-colors">Join now</button>
-            <button className="w-full bg-white text-primary py-2 rounded-md text-sm font-medium border border-shade-border hover:bg-shade transition-colors">Log in</button>
-          </div>
+          )}
+
+          {/* When logged in show welcome message */}
+          {user && (
+            <div className="bg-[#E3F0FF] p-4 rounded-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+                  {(user.name || user.email || 'U')[0].toUpperCase()}
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-dark text-sm font-medium">Hi, {user.name || user.email.split('@')[0]}</p>
+                  <p className="text-gray-500 text-xs">Welcome back!</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPage('listing')}
+                className="w-full bg-primary hover:bg-primary-dark text-white py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Browse Products
+              </button>
+            </div>
+          )}
 
           {/* Promo 1 */}
           <div 

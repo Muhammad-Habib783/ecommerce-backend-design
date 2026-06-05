@@ -1,54 +1,101 @@
-import React from 'react';
-import item1 from '../assets/Image/tech/6.png';
-import item2 from '../assets/Image/tech/8.png';
+import React, { useState, useEffect } from 'react';
 
-const Orders = ({ setPage }) => {
-    const orderItems = [
-        { id: 112, title: "GoPro HERO6 4K Action Camera - Black", date: "March 10, 2024", total: "$154.00", image: item1 },
-        { id: 113, title: "Smart Watch with Heart Rate Monitor", date: "March 08, 2024", total: "$89.50", image: item2 }
-    ];
+function Orders({ setPage }) {
+  const [orders, setOrders] = useState([]);
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
 
+  useEffect(() => {
+    const savedOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+    setOrders(savedOrders);
+  }, []);
+
+  if (!user) {
     return (
-        <div className="container py-8">
-            <div className="bg-white border border-[#DEE2E7] rounded-lg p-8 shadow-sm">
-                <h1 className="text-2xl font-bold mb-6">Recent Orders</h1>
-                <div className="space-y-6">
-                    {orderItems.map((order) => (
-                        <div key={order.id} className="border border-[#DEE2E7] rounded-lg overflow-hidden">
-                            <div className="bg-[#F7FAFC] p-4 border-b border-[#DEE2E7] flex justify-between items-center whitespace-nowrap overflow-x-auto no-scrollbar gap-4">
-                                <div className="flex gap-6 text-sm">
-                                    <div>
-                                        <p className="text-[#8B96A5]">ORDER PLACED</p>
-                                        <p className="font-medium">{order.date}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[#8B96A5]">TOTAL</p>
-                                        <p className="font-medium">{order.total}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[#8B96A5]">SHIP TO</p>
-                                        <p className="font-medium text-primary cursor-pointer hover:underline">John Doe</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-[#8B96A5] text-sm text-right">ORDER # 112-987654-{order.id}</p>
-                                </div>
-                            </div>
-                            <div className="p-6 flex gap-6">
-                                <div className="w-20 h-20 bg-white border border-[#DEE2E7] rounded p-2 flex items-center justify-center">
-                                    <img src={order.image} alt={order.title} className="max-w-full max-h-full object-contain" />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-primary hover:underline cursor-pointer mb-2">{order.title}</h3>
-                                    <button className="bg-primary text-white px-4 py-2 rounded text-sm font-bold hover:bg-primary-dark transition-colors">Buy it again</button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center bg-white p-8 rounded-lg shadow-md">
+          <div className="text-6xl mb-4">📦</div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Not Logged In</h2>
+          <p className="text-gray-500 mb-6">Please sign in to view your orders</p>
+          <button
+            onClick={() => setPage('auth')}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 mr-3"
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => setPage('home')}
+            className="border border-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50"
+          >
+            Go Home
+          </button>
         </div>
+      </div>
     );
-};
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">My Orders</h1>
+        <button onClick={() => setPage('home')} className="text-blue-600 hover:underline text-sm">
+          ← Back to Home
+        </button>
+      </div>
+
+      {orders.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-lg shadow">
+          <div className="text-6xl mb-4">📦</div>
+          <h2 className="text-xl font-medium text-gray-600 mb-4">No orders yet</h2>
+          <button
+            onClick={() => setPage('listing')}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+          >
+            Start Shopping
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {orders.slice().reverse().map((order) => (
+            <div key={order.id} className="bg-white rounded-lg shadow p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-bold text-gray-800">Order #{order.id.slice(-6)}</h3>
+                  <p className="text-sm text-gray-400">{order.date}</p>
+                </div>
+                <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-sm font-medium">
+                  {order.status}
+                </span>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                {order.items.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3">
+                    <img
+                      src={item.image || 'https://via.placeholder.com/50'}
+                      alt={item.name}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-800 text-sm">{item.name}</p>
+                      <p className="text-gray-400 text-xs">Qty: {item.quantity} × ${item.price}</p>
+                    </div>
+                    <p className="font-medium text-gray-800">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t pt-3 flex justify-between font-bold">
+                <span>Total</span>
+                <span className="text-blue-600">${order.total}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default Orders;
