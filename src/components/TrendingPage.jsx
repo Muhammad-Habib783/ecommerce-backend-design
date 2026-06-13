@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getProducts } from '../api';
+import { db } from '../firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 function TrendingPage({ setPage }) {
   const [products, setProducts] = useState([]);
@@ -12,8 +13,11 @@ function TrendingPage({ setPage }) {
   const fetchElectronics = async () => {
     setLoading(true);
     try {
-      const res = await getProducts({ category: 'electronics', limit: 8, page: 1 });
-      setProducts(res.data.products);
+      const q = query(collection(db, 'products'), where('category', '==', 'electronics'));
+      const snapshot = await getDocs(q);
+      const items = [];
+      snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+      setProducts(items.slice(0, 8));
     } catch (error) {
       console.error('Error:', error);
     } finally {

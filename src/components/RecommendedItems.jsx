@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getProducts } from '../api';
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 function RecommendedItems({ setPage }) {
   const [items, setItems] = useState([]);
@@ -11,8 +12,13 @@ function RecommendedItems({ setPage }) {
 
   const fetchRecommended = async () => {
     try {
-      const res = await getProducts({ limit: 4, page: 1 });
-      setItems(res.data.products.slice(0, 4));
+      const snapshot = await getDocs(collection(db, 'products'));
+      const allProducts = [];
+      snapshot.forEach(doc => {
+        allProducts.push({ id: doc.id, ...doc.data() });
+      });
+      // Just show first 4 products
+      setItems(allProducts.slice(0, 4));
     } catch (error) {
       console.error('Error fetching recommended:', error);
     } finally {
@@ -21,6 +27,7 @@ function RecommendedItems({ setPage }) {
   };
 
   if (loading) return null;
+  if (items.length === 0) return null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

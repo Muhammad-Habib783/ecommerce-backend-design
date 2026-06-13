@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getProduct, rateProduct } from '../api';
+import { db } from '../firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import StarRating from './StarRating';
 
 function ProductDetails({ setPage, product }) {
   const [productData, setProductData] = useState(product || null);
-  const [loading, setLoading] = useState(!product);
+  const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [ratingMsg, setRatingMsg] = useState('');
@@ -18,8 +19,11 @@ function ProductDetails({ setPage, product }) {
   const fetchProduct = async () => {
     setLoading(true);
     try {
-      const res = await getProduct(product.id);
-      setProductData(res.data);
+      const docRef = doc(db, 'products', product.id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setProductData({ id: docSnap.id, ...docSnap.data() });
+      }
     } catch (error) {
       console.error('Error fetching product:', error);
     } finally {
@@ -42,18 +46,29 @@ function ProductDetails({ setPage, product }) {
   };
 
   const handleRate = async (star) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) {
       setRatingMsg('Please login to rate this product!');
       setTimeout(() => setRatingMsg(''), 3000);
       return;
     }
     try {
-      const res = await rateProduct(productData.id, star);
+      const productRef = doc(db, 'products', productData.id);
+      const productSnap = await getDoc(productRef);
+      const data = productSnap.data();
+      const ratings = data.ratings || {};
+      ratings[user.uid] = star;
+      const totalRatings = Object.values(ratings).length;
+      const avgRating = Object.values(ratings).reduce((a, b) => a + b, 0) / totalRatings;
+      await updateDoc(productRef, {
+        ratings,
+        avgRating: Math.round(avgRating * 10) / 10,
+        totalRatings
+      });
       setProductData(prev => ({
         ...prev,
-        avgRating: res.data.avgRating,
-        totalRatings: res.data.totalRatings
+        avgRating: Math.round(avgRating * 10) / 10,
+        totalRatings
       }));
       setRatingMsg('Thanks for rating! ⭐');
       setTimeout(() => setRatingMsg(''), 3000);
@@ -91,7 +106,6 @@ function ProductDetails({ setPage, product }) {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-          {/* Product Image */}
           <div className="bg-gray-100 rounded-lg overflow-hidden h-80 md:h-96">
             <img
               src={productData.image || 'https://via.placeholder.com/400'}
@@ -100,14 +114,12 @@ function ProductDetails({ setPage, product }) {
             />
           </div>
 
-          {/* Product Info */}
           <div className="flex flex-col justify-between">
             <div>
               <p className="text-sm text-gray-400 capitalize mb-2">{productData.category}</p>
               <h1 className="text-2xl font-bold text-gray-800 mb-3">{productData.name}</h1>
               <p className="text-3xl font-bold text-blue-600 mb-3">${productData.price}</p>
 
-              {/* Rating */}
               <div className="mb-4">
                 <p className="text-sm text-gray-500 mb-1">Rate this product:</p>
                 <StarRating
@@ -131,7 +143,6 @@ function ProductDetails({ setPage, product }) {
               </p>
             </div>
 
-            {/* Quantity and Add to Cart */}
             <div>
               <div className="flex items-center gap-4 mb-4">
                 <span className="text-gray-700 font-medium">Quantity:</span>

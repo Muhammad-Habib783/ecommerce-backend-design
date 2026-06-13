@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { addProduct } from '../api';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 function AddProduct({ setPage }) {
   const [form, setForm] = useState({
@@ -25,11 +26,19 @@ function AddProduct({ setPage }) {
     setLoading(true);
 
     try {
-      await addProduct(form);
+      await addDoc(collection(db, 'products'), {
+        name: form.name,
+        price: parseFloat(form.price),
+        category: form.category,
+        image: form.image || '',
+        description: form.description || '',
+        stock: parseInt(form.stock) || 0,
+        createdAt: new Date().toISOString()
+      });
       setSuccess('Product added successfully!');
       setForm({ name: '', price: '', category: '', image: '', description: '', stock: '' });
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to add product. Please login first.');
+      setError('Failed to add product. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -50,24 +59,17 @@ function AddProduct({ setPage }) {
         </div>
 
         {error && (
-          <div className="bg-red-100 text-red-600 p-3 rounded mb-4 text-sm">
-            {error}
-          </div>
+          <div className="bg-red-100 text-red-600 p-3 rounded mb-4 text-sm">{error}</div>
         )}
-
         {success && (
-          <div className="bg-green-100 text-green-600 p-3 rounded mb-4 text-sm">
-            {success}
-          </div>
+          <div className="bg-green-100 text-green-600 p-3 rounded mb-4 text-sm">{success}</div>
         )}
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
             <div>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Product Name *
-              </label>
+              <label className="block text-gray-700 text-sm font-medium mb-2">Product Name *</label>
               <input
                 type="text"
                 name="name"
@@ -80,9 +82,7 @@ function AddProduct({ setPage }) {
             </div>
 
             <div>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Price ($) *
-              </label>
+              <label className="block text-gray-700 text-sm font-medium mb-2">Price ($) *</label>
               <input
                 type="number"
                 name="price"
@@ -95,9 +95,7 @@ function AddProduct({ setPage }) {
             </div>
 
             <div>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Category *
-              </label>
+              <label className="block text-gray-700 text-sm font-medium mb-2">Category *</label>
               <select
                 name="category"
                 value={form.category}
@@ -116,9 +114,7 @@ function AddProduct({ setPage }) {
             </div>
 
             <div>
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Stock
-              </label>
+              <label className="block text-gray-700 text-sm font-medium mb-2">Stock</label>
               <input
                 type="number"
                 name="stock"
@@ -130,9 +126,7 @@ function AddProduct({ setPage }) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Image URL
-              </label>
+              <label className="block text-gray-700 text-sm font-medium mb-2">Image URL</label>
               <input
                 type="text"
                 name="image"
@@ -144,9 +138,7 @@ function AddProduct({ setPage }) {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Description
-              </label>
+              <label className="block text-gray-700 text-sm font-medium mb-2">Description</label>
               <textarea
                 name="description"
                 value={form.description}
