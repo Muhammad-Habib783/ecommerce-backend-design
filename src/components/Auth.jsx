@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { auth } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 
+// 👇 Add any admin emails here
+const ADMIN_EMAILS = ['admin@ecommerce.com'];
+
 function Auth({ setPage, setUser, mode }) {
   const [isLogin, setIsLogin] = useState(mode !== 'signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [popup, setPopup] = useState(null); // 'success' | 'error'
+  const [popup, setPopup] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
 
   const showPopup = (type, msg = '') => {
@@ -37,32 +40,38 @@ function Auth({ setPage, setUser, mode }) {
       }
 
       const token = await userCredential.user.getIdToken();
+      const userEmail = userCredential.user.email;
+
+      // Determine role: if email is in ADMIN_EMAILS list, they are admin
+      const isAdmin = ADMIN_EMAILS.includes(userEmail.toLowerCase());
+
       const userData = {
-        email: userCredential.user.email,
+        email: userEmail,
         uid: userCredential.user.uid,
-        name: name || email.split('@')[0]
+        name: name || userEmail.split('@')[0],
+        role: isAdmin ? 'admin' : 'user',
       };
 
       localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
 
-// Save user to Firestore with role
-const { saveProfile } = await import('../api');
-await saveProfile({ name: userData.name }).catch(() => {});
-
-// Get user role from backend
-const { getMe } = await import('../api');
-const meRes = await getMe().catch(() => null);
-if (meRes?.data) {
-  userData.role = meRes.data.role || 'user';
-}
-
-localStorage.setItem('user', JSON.stringify(userData));
-setUser(userData);
+      // Also try to save/sync with backend in background (optional, won't block login)
+      try {
+        const { saveProfile } = await import('../api');
+        await saveProfile({ name: userData.name });
+      } catch {
+        // Backend not available — that's fine, role is already set above
+      }
 
       showPopup('success');
     } catch (err) {
       let msg = 'Something went wrong. Please try again.';
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      if (
+        err.code === 'auth/user-not-found' ||
+        err.code === 'auth/wrong-password' ||
+        err.code === 'auth/invalid-credential'
+      ) {
         msg = 'Invalid email or password. Please try again.';
       } else if (err.code === 'auth/email-already-in-use') {
         msg = 'This email is already registered. Please login instead.';
@@ -126,7 +135,6 @@ setUser(userData);
       )}
 
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
-        {/* Back button */}
         <button
           onClick={() => setPage('home')}
           className="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition mb-6"
