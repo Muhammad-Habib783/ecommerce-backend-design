@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getProducts } from '../api';
+import { db } from '../firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 function ProductListing({ setPage, searchQuery }) {
   const [products, setProducts] = useState([]);
@@ -7,25 +8,38 @@ function ProductListing({ setPage, searchQuery }) {
   const [search, setSearch] = useState(searchQuery || '');
   const [category, setCategory] = useState('');
   const [page, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+  const LIMIT = 8;
 
   useEffect(() => {
-    fetchProducts(searchQuery || '', '', 1);
+    fetchProducts('', '', 1);
   }, [searchQuery]);
 
   const fetchProducts = async (searchVal = '', categoryVal = '', pageVal = 1) => {
     setLoading(true);
     try {
-      const res = await getProducts({
-        search: searchVal || '',
-        category: categoryVal || '',
-        page: pageVal,
-        limit: 8
+      let q;
+      if (categoryVal) {
+        q = query(collection(db, 'products'), where('category', '==', categoryVal));
+      } else {
+        q = collection(db, 'products');
+      }
+
+      const snapshot = await getDocs(q);
+      let allProducts = [];
+      snapshot.forEach(doc => {
+        allProducts.push({ id: doc.id, ...doc.data() });
       });
-      setProducts(res.data.products);
-      setTotalPages(res.data.totalPages);
-      setTotal(res.data.total);
+
+      // Search filter
+      const searchTerm = searchVal || searchQuery || '';
+      if (searchTerm) {
+        allProducts = allProducts.filter(p =>
+          p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.category.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      setProducts(allProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
       setProducts([]);
@@ -46,11 +60,15 @@ function ProductListing({ setPage, searchQuery }) {
     fetchProducts(search, cat, 1);
   };
 
+  // Pagination
+  const totalPages = Math.ceil(products.length / LIMIT);
+  const paginated = products.slice((page - 1) * LIMIT, page * LIMIT);
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
-          All Products {total > 0 && <span className="text-gray-400 text-lg">({total})</span>}
+          All Products {products.length > 0 && <span className="text-gray-400 text-lg">({products.length})</span>}
         </h1>
         <button onClick={() => setPage('home')} className="text-blue-600 hover:underline text-sm">
           ← Back to Home
@@ -90,13 +108,13 @@ function ProductListing({ setPage, searchQuery }) {
         <div className="flex justify-center items-center h-64">
           <div className="text-gray-500 text-lg">Loading products...</div>
         </div>
-      ) : products.length === 0 ? (
+      ) : paginated.length === 0 ? (
         <div className="flex justify-center items-center h-64">
           <div className="text-gray-500 text-lg">No products found</div>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map((product) => (
+          {paginated.map((product) => (
             <div
               key={product.id}
               onClick={() => setPage('details', product)}
@@ -111,13 +129,13 @@ function ProductListing({ setPage, searchQuery }) {
               </div>
               <div className="p-3">
                 <p className="text-xs text-gray-400 capitalize mb-1">{product.category}</p>
-<h3 className="font-medium text-gray-800 text-sm mb-1 truncate">{product.name}</h3>
-<div className="flex items-center gap-1 mb-1">
-  {[1,2,3,4,5].map(star => (
-    <span key={star} className={`text-sm ${star <= Math.round(product.avgRating || 0) ? 'text-yellow-400' : 'text-gray-300'}`}>★</span>
-  ))}
-  <span className="text-xs text-gray-400">({product.totalRatings || 0})</span>
-</div>
+                <h3 className="font-medium text-gray-800 text-sm mb-1 truncate">{product.name}</h3>
+                <div className="flex items-center gap-1 mb-1">
+                  {[1,2,3,4,5].map(star => (
+                    <span key={star} className={`text-sm ${star <= Math.round(product.avgRating || 0) ? 'text-yellow-400' : 'text-gray-300'}`}>★</span>
+                  ))}
+                  <span className="text-xs text-gray-400">({product.totalRatings || 0})</span>
+                </div>
                 <p className="text-blue-600 font-bold">${product.price}</p>
                 <p className="text-xs text-gray-400 mt-1">Stock: {product.stock}</p>
               </div>
@@ -129,7 +147,7 @@ function ProductListing({ setPage, searchQuery }) {
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-8">
           <button
-            onClick={() => { setCurrentPage(p => p - 1); fetchProducts(search, category, page - 1); }}
+            onClick={() => setCurrentPage(p => p - 1)}
             disabled={page === 1}
             className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100"
           >
@@ -138,14 +156,14 @@ function ProductListing({ setPage, searchQuery }) {
           {[...Array(totalPages)].map((_, i) => (
             <button
               key={i + 1}
-              onClick={() => { setCurrentPage(i + 1); fetchProducts(search, category, i + 1); }}
+              onClick={() => setCurrentPage(i + 1)}
               className={`px-4 py-2 border rounded-lg ${page === i + 1 ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}`}
             >
               {i + 1}
             </button>
           ))}
           <button
-            onClick={() => { setCurrentPage(p => p + 1); fetchProducts(search, category, page + 1); }}
+            onClick={() => setCurrentPage(p => p + 1)}
             disabled={page === totalPages}
             className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100"
           >
