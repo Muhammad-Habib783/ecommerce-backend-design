@@ -211,7 +211,7 @@ function Auth({ setPage, setUser, mode }) {
       </div>
 
       <style>{`
-        @keyframes bounceIn {
+        @keyframes bounceIn  {
           0% { transform: scale(0.5); opacity: 0; }
           70% { transform: scale(1.05); }
           100% { transform: scale(1); opacity: 1; }
